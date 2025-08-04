@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>搖一搖抽卡活動</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+    #cardResult img { width: 200px; margin-top: 10px; }
+    #cardCollection img { width: 80px; margin: 5px; }
+    #cardCollection { margin-top: 30px; }
+    #info { margin-top: 15px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>搖一搖來抽卡！</h1>
+  <p>請搖動手機抽一張卡，一天只能抽一次喔！</p>
+
+  <div id="cardResult"></div>
+
+  <div id="info"></div>
+
+  <h2>你的卡片收藏牆</h2>
+  <div id="cardCollection"></div>
+
+  <script>
+    // 卡片資料
+    const cards = [
+      { name: "卡片A", img: "1.jpg" },
+      { name: "卡片B", img: "2.jpg" },
+      { name: "卡片C", img: "3.jpg" },
+      { name: "卡片D", img: "4.jpg" },
+      { name: "卡片E", img: "5.jpg" },
+      { name: "卡片F", img: "6.jpg" },
+    ];
+
+    // 門檻值（搖晃感應）
+    const SHAKE_THRESHOLD = 15;
+
+    // 防止連續抽卡
+    let shaking = false;
+
+    // 讀取本地紀錄
+    function getCardHistory() {
+      return JSON.parse(localStorage.getItem("cardHistory") || "{}");
+    }
+
+    // 儲存卡片紀錄
+    function saveCardHistory(date, cardIndex) {
+      let history = getCardHistory();
+      if (!history[date]) history[date] = [];
+      history[date].push(cardIndex);
+      localStorage.setItem("cardHistory", JSON.stringify(history));
+    }
+
+    // 判斷今天是否已抽卡
+    function hasDrawToday() {
+      const today = new Date().toISOString().slice(0, 10);
+      const history = getCardHistory();
+      return history[today] && history[today].length > 0;
+    }
+
+    // 顯示抽卡結果
+    function showCard(cardIndex) {
+      const card = cards[cardIndex];
+      const cardResultDiv = document.getElementById("cardResult");
+      cardResultDiv.innerHTML = `
+        <h3>恭喜你抽到：${card.name}</h3>
+        <img src="${card.img}" alt="${card.name}" />
+      `;
+      document.getElementById("info").textContent = "今天已打卡，明天再來抽卡吧！";
+    }
+
+    // 顯示收藏牆
+    function showCardCollection() {
+      const history = getCardHistory();
+      const collectionDiv = document.getElementById("cardCollection");
+      collectionDiv.innerHTML = "";
+
+      // 將所有日期的卡片整理成陣列
+      const allCards = [];
+      for (const date in history) {
+        allCards.push(...history[date]);
+      }
+
+      // 去重（避免重複卡片顯示多次）
+      const uniqueCards = [...new Set(allCards)];
+
+      if (uniqueCards.length === 0) {
+        collectionDiv.textContent = "你還沒有抽過卡片喔～";
+        return;
+      }
+
+      uniqueCards.forEach(idx => {
+        const card = cards[idx];
+        const img = document.createElement("img");
+        img.src = card.img;
+        img.alt = card.name;
+        collectionDiv.appendChild(img);
+      });
+    }
+
+    // 抽卡
+    function doDrawCard() {
+      if (hasDrawToday()) {
+        alert("今天已經抽過卡囉，明天再來！");
+        return;
+      }
+
+      const cardIndex = Math.floor(Math.random() * cards.length);
+      const today = new Date().toISOString().slice(0, 10);
+      saveCardHistory(today, cardIndex);
+      showCard(cardIndex);
+      showCardCollection();
+    }
+
+    // 搖一搖偵測
+    window.addEventListener("devicemotion", (event) => {
+      if (shaking) return; // 防止連續觸發
+
+      const acc = event.accelerationIncludingGravity;
+      if (!acc) return;
+
+      const totalAcc = Math.sqrt(acc.x*acc.x + acc.y*acc.y + acc.z*acc.z);
+
+      if (totalAcc > SHAKE_THRESHOLD) {
+        shaking = true;
+        doDrawCard();
+
+        // 1.5秒後解除鎖定，允許再次搖晃
+        setTimeout(() => { shaking = false; }, 1500);
+      }
+    });
+
+    // 初始顯示收藏牆
+    showCardCollection();
+
+  </script>
+</body>
+</html>
