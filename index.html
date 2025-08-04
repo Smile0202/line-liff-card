@@ -67,7 +67,7 @@
         <h3>恭喜你抽到：${card.name}</h3>
         <img src="${card.img}" alt="${card.name}" />
       `;
-      document.getElementById("info").textContent = "今天已打卡，明天再來抽卡吧！";
+      document.getElementById("info").textContent = "再抽一次也沒問題喔 🎉";
     }
 
     // 顯示收藏牆
@@ -99,16 +99,13 @@
 
     // 抽卡
     function doDrawCard() {
-      if (hasDrawToday()) {
-        alert("今天已經抽過卡囉，明天再來！");
-        return;
-      }
-      const cardIndex = Math.floor(Math.random() * cards.length);
-      const today = new Date().toISOString().slice(0, 10);
-      saveCardHistory(today, cardIndex);
-      showCard(cardIndex);
-      showCardCollection();
-    }
+  const cardIndex = Math.floor(Math.random() * cards.length);
+  const today = new Date().toISOString().slice(0, 10);
+  saveCardHistory(today, cardIndex);
+  showCard(cardIndex);
+  showCardCollection();
+}
+
 
     // 搖一搖處理函式
     function shakeHandler(event) {
