@@ -10,14 +10,16 @@
     #cardCollection img { width: 80px; margin: 5px; }
     #cardCollection { margin-top: 30px; }
     #info { margin-top: 15px; font-weight: bold; }
+    #startBtn { font-size: 20px; padding: 10px 20px; margin: 20px auto; cursor: pointer; }
   </style>
 </head>
 <body>
   <h1>搖一搖來抽卡！</h1>
-  <p>請搖動手機抽一張卡，一天只能抽一次喔！</p>
+  <p>請先點擊下方按鈕啟動搖一搖功能，然後搖動手機抽卡，一天只能抽一次喔！</p>
+
+  <button id="startBtn">開始搖一搖抽卡</button>
 
   <div id="cardResult"></div>
-
   <div id="info"></div>
 
   <h2>你的卡片收藏牆</h2>
@@ -34,10 +36,7 @@
       { name: "卡片F", img: "6.jpg" },
     ];
 
-    // 門檻值（搖晃感應）
     const SHAKE_THRESHOLD = 15;
-
-    // 防止連續抽卡
     let shaking = false;
 
     // 讀取本地紀錄
@@ -77,13 +76,11 @@
       const collectionDiv = document.getElementById("cardCollection");
       collectionDiv.innerHTML = "";
 
-      // 將所有日期的卡片整理成陣列
       const allCards = [];
       for (const date in history) {
         allCards.push(...history[date]);
       }
 
-      // 去重（避免重複卡片顯示多次）
       const uniqueCards = [...new Set(allCards)];
 
       if (uniqueCards.length === 0) {
@@ -106,7 +103,6 @@
         alert("今天已經抽過卡囉，明天再來！");
         return;
       }
-
       const cardIndex = Math.floor(Math.random() * cards.length);
       const today = new Date().toISOString().slice(0, 10);
       saveCardHistory(today, cardIndex);
@@ -114,27 +110,47 @@
       showCardCollection();
     }
 
-    // 搖一搖偵測
-    window.addEventListener("devicemotion", (event) => {
-      if (shaking) return; // 防止連續觸發
-
+    // 搖一搖處理函式
+    function shakeHandler(event) {
+      if (shaking) return;
       const acc = event.accelerationIncludingGravity;
       if (!acc) return;
-
       const totalAcc = Math.sqrt(acc.x*acc.x + acc.y*acc.y + acc.z*acc.z);
-
       if (totalAcc > SHAKE_THRESHOLD) {
         shaking = true;
         doDrawCard();
-
-        // 1.5秒後解除鎖定，允許再次搖晃
         setTimeout(() => { shaking = false; }, 1500);
+      }
+    }
+
+    // 啟動搖一搖功能（iOS 需先請求權限）
+    const startBtn = document.getElementById("startBtn");
+    startBtn.addEventListener("click", () => {
+      if (typeof DeviceMotionEvent !== 'undefined' && 
+          typeof DeviceMotionEvent.requestPermission === 'function') {
+        // iOS 13+ 需要先請求權限
+        DeviceMotionEvent.requestPermission()
+          .then(permissionState => {
+            if (permissionState === 'granted') {
+              window.addEventListener('devicemotion', shakeHandler);
+              startBtn.style.display = 'none';
+              alert("搖一搖功能已啟動，請搖動手機試試看！");
+            } else {
+              alert("請允許搖一搖權限才能使用！");
+            }
+          })
+          .catch(console.error);
+      } else {
+        // 非iOS或不需權限，直接綁定
+        window.addEventListener('devicemotion', shakeHandler);
+        startBtn.style.display = 'none';
+        alert("搖一搖功能已啟動，請搖動手機試試看！");
       }
     });
 
     // 初始顯示收藏牆
     showCardCollection();
-
   </script>
 </body>
 </html>
+
